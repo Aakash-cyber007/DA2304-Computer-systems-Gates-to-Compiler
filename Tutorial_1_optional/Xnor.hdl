@@ -1,0 +1,13 @@
+CHIP Xnor{
+    IN a,b;
+    OUT out;
+    
+    PARTS:
+    Or(a=a,b=b,out = or1);
+    Not(in=or1,out = low);
+    Not(in=a,out=a1);
+    Not(in=b,out=b1);
+    Or(a=a1,b=b1,out=or2);
+    Not(in= or2 ,out=high );
+    Or(a= low,b=high,out = out);
+}

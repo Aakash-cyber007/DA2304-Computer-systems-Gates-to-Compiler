@@ -1,0 +1,10 @@
+CHIP y {
+    IN A,B,C;
+    OUT out;
+
+    PARTS:
+    Not(in=B , out=B1 );
+    And(a=B1 , b=C , out= second);
+    Xor(a=A , b=C , out= first );
+    Or(a= first,b = second,out = out);
+}
