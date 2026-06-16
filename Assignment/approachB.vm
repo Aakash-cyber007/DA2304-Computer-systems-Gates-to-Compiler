@@ -1,0 +1,169 @@
+function PROD 2
+    push constant 0
+    pop local 1
+    push constant 0
+    pop local 0
+label PROD_RUN
+    push local 0
+    push argument 1
+    eq
+    if-goto PROD_STOP
+    push local 1
+    push argument 0
+    add
+    pop local 1
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    goto PROD_RUN
+label PROD_STOP
+    push local 1
+    return
+
+function DOT_PRODUCT 2
+    push constant 0
+    pop local 0
+    push constant 0
+    pop local 1
+
+label DP_ITER
+    push local 1
+    push argument 2
+    eq
+    if-goto DP_DONE
+
+    push argument 0
+    push local 1
+    add
+    pop pointer 1
+    push that 0
+
+    push local 1
+    push argument 3
+    call PROD 2
+    push argument 1
+    add
+    pop pointer 1
+    push that 0
+
+    call PROD 2
+    push local 0
+    add
+    pop local 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto DP_ITER
+
+label DP_DONE
+    push local 0
+    return
+
+function matmul 2
+    push constant 0
+    pop local 0
+
+label ROW_SCAN
+    push local 0
+    push argument 3
+    eq
+    if-goto ROW_SCAN_END
+
+    push constant 0
+    pop local 1
+
+label COL_SCAN
+    push local 1
+    push argument 5
+    eq
+    if-goto COL_SCAN_END
+
+    push argument 0
+    push local 0
+    push argument 4
+    call PROD 2
+    add
+
+    push argument 1
+    push local 1
+    add
+
+    push argument 4
+    push argument 5
+
+    call DOT_PRODUCT 4
+
+    pop temp 0
+
+    push argument 2
+    push local 0
+    push argument 5
+    call PROD 2
+    add
+    push local 1
+    add
+    pop pointer 1
+
+    push temp 0
+    pop that 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto COL_SCAN
+
+label COL_SCAN_END
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    goto ROW_SCAN
+
+label ROW_SCAN_END
+    push argument 2
+    return
+
+function add_bias 2
+    push argument 2
+    push argument 3
+    call PROD 2
+    pop local 0
+
+    push constant 0
+    pop local 1
+
+label BIAS_WALK
+    push local 1
+    push local 0
+    eq
+    if-goto BIAS_WALK_END
+
+    push argument 1
+    push local 1
+    add
+    pop pointer 1
+    push that 0
+
+    push argument 0
+    push local 1
+    add
+    pop pointer 1
+    push that 0
+
+    add
+
+    pop that 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto BIAS_WALK
+
+label BIAS_WALK_END
+    push argument 0
+    return

@@ -1,0 +1,152 @@
+function MUL 2
+    push constant 0
+    pop local 1
+    push constant 0
+    pop local 0
+label MUL_ITER
+    push local 0
+    push argument 1
+    eq
+    if-goto MUL_DONE
+    push local 1
+    push argument 0
+    add
+    pop local 1
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    goto MUL_ITER
+label MUL_DONE
+    push local 1
+    return
+
+function matmul 5
+    push constant 0
+    pop local 0
+
+label OUTER_ROW
+    push local 0
+    push argument 3
+    eq
+    if-goto DONE_ROW
+
+    push constant 0
+    pop local 1
+
+label INNER_COL
+    push local 1
+    push argument 5
+    eq
+    if-goto DONE_COL
+
+    push constant 0
+    pop local 2
+    push constant 0
+    pop local 3
+
+label ACCUM_LOOP
+    push local 2
+    push argument 4
+    eq
+    if-goto ACCUM_DONE
+
+    push local 0
+    push argument 4
+    call MUL 2
+    push local 2
+    add
+    push argument 0
+    add
+    pop pointer 1
+    push that 0
+
+    push local 2
+    push argument 5
+    call MUL 2
+    push local 1
+    add
+    push argument 1
+    add
+    pop pointer 1
+    push that 0
+
+    call MUL 2
+    push local 3
+    add
+    pop local 3
+
+    push local 2
+    push constant 1
+    add
+    pop local 2
+    goto ACCUM_LOOP
+
+label ACCUM_DONE
+    push local 0
+    push argument 5
+    call MUL 2
+    push local 1
+    add
+    push argument 2
+    add
+    pop pointer 1
+    push local 3
+    pop that 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto INNER_COL
+
+label DONE_COL
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    goto OUTER_ROW
+
+label DONE_ROW
+    push argument 2
+    return
+
+function add_bias 2
+    push argument 2
+    push argument 3
+    call MUL 2
+    pop local 0
+
+    push constant 0
+    pop local 1
+
+label BIAS_ITER
+    push local 1
+    push local 0
+    eq
+    if-goto BIAS_DONE
+
+    push argument 1
+    push local 1
+    add
+    pop pointer 1
+    push that 0
+
+    push argument 0
+    push local 1
+    add
+    pop pointer 1
+    push that 0
+
+    add
+    pop that 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto BIAS_ITER
+
+label BIAS_DONE
+    push argument 0
+    return
