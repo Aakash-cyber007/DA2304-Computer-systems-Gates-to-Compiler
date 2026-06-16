@@ -1,0 +1,169 @@
+/**
+ * Conv class -- performs 2D convolution with a 3x3 filter on an NxN input.
+ * All matrices are stored as flattened 1D arrays.
+ * Index formula: index = (row * N) + col
+ *
+ * Filter used: Horizontal edge-detection kernel
+ *   -1  -1  -1
+ *    0   0   0
+ *    1   1   1
+ *
+ * Stride is set to 1 by default (configurable in constructor).
+ */
+class Conv {
+    static Array ArrayFilter;   // 3x3 filter, flattened to length 9
+    static int stride;          // stride value (1 or 2)
+
+    field Array ArrayInput;     // input matrix, flattened
+    field Array ArrayOutput;    // output matrix, flattened
+    field int ArraySize;        // side length N of NxN input
+
+    /**
+     * Constructor: allocate arrays and set stride.
+     * N is the side length of the square input matrix.
+     */
+    constructor Conv new(int N) {
+        var int outDim;
+        var int outTotal;
+
+        let ArraySize = N;
+        let stride = 1;
+
+        // Allocate filter (static, but safe to re-alloc each time for simplicity)
+        let ArrayFilter = Array.new(9);
+
+        // Allocate input
+        let ArrayInput = Array.new(N * N);
+
+        // Compute output dimension: O = ((N - 3) / stride) + 1
+        let outDim = ((N - 3) / stride) + 1;
+        let outTotal = outDim * outDim;
+        let ArrayOutput = Array.new(outTotal);
+
+        return this;
+    }
+
+    /**
+     * Populate the 3x3 filter from 9 values supplied by the caller.
+     */
+    method void initFilter(Array values) {
+        var int i;
+        let i = 0;
+        while (i < 9) {
+            let ArrayFilter[i] = values[i];
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /**
+     * Store the caller-supplied flattened input array and its side length.
+     */
+    method void getArrayInput(Array input, int size) {
+        var int i;
+        var int total;
+
+        let ArraySize = size;
+        let total = size * size;
+        let i = 0;
+        while (i < total) {
+            let ArrayInput[i] = input[i];
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /**
+     * Compute and return the output dimension.
+     * O = ((N - 3 + 2*0) / stride) + 1  =  ((N - 3) / stride) + 1
+     */
+    method int calcOutputDim() {
+        return ((ArraySize - 3) / stride) + 1;
+    }
+
+    /**
+     * Run the full 2D convolution.
+     * Slides the 3x3 filter across the input with the configured stride.
+     * Stores MAC results into ArrayOutput.
+     */
+    method void conv2d() {
+        var int outDim;
+        var int outRow, outCol;
+        var int inRow, inCol;
+        var int fRow, fCol;
+        var int sum;
+        var int k;
+        var int inputIdx, filterIdx;
+
+        let outDim = calcOutputDim();
+
+        // Bounds check: if outDim < 1 the input is too small
+        if (outDim < 1) {
+            // Signal error: write -1 to RAM[0] as error flag
+            do Memory.poke(0, -1);
+            return;
+        }
+
+        let k = 0;
+        let outRow = 0;
+        while (outRow < outDim) {
+            let outCol = 0;
+            while (outCol < outDim) {
+                let sum = 0;
+                let fRow = 0;
+                while (fRow < 3) {
+                    let fCol = 0;
+                    while (fCol < 3) {
+                        let inRow = (outRow * stride) + fRow;
+                        let inCol = (outCol * stride) + fCol;
+                        let inputIdx = (inRow * ArraySize) + inCol;
+                        let filterIdx = (fRow * 3) + fCol;
+                        let sum = sum + (ArrayInput[inputIdx] * ArrayFilter[filterIdx]);
+                        let fCol = fCol + 1;
+                    }
+                    let fRow = fRow + 1;
+                }
+                let ArrayOutput[k] = sum;
+                let k = k + 1;
+                let outCol = outCol + 1;
+            }
+            let outRow = outRow + 1;
+        }
+        return;
+    }
+
+    /**
+     * Print the output matrix row-by-row.
+     */
+    method void printOutput() {
+        var int outDim;
+        var int r, c, idx;
+
+        let outDim = calcOutputDim();
+        let idx = 0;
+        let r = 0;
+        while (r < outDim) {
+            let c = 0;
+            while (c < outDim) {
+                do Output.printInt(ArrayOutput[idx]);
+                do Output.printChar(32);   // space
+                let idx = idx + 1;
+                let c = c + 1;
+            }
+            do Output.println();
+            let r = r + 1;
+        }
+        return;
+    }
+
+    /**
+     * Free all allocated memory.
+     */
+    method void dispose() {
+        do ArrayInput.dispose();
+        do ArrayOutput.dispose();
+        do ArrayFilter.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+}
