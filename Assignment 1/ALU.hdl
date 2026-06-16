@@ -1,0 +1,50 @@
+CHIP ALU {
+    IN  
+        x[16], y[16],  // 16-bit inputs        
+        zx, // zero the x input?
+        nx, // negate the x input?
+        zy, // zero the y input?
+        ny, // negate the y input?
+        f,  // compute out = x + y (if 1) or x & y (if 0)
+        no; // negate the out output? (Used as LO/HI switch for MUL)
+
+    OUT 
+        out[16],
+        zr, 
+        ng; 
+
+    PARTS:
+
+    Mux16(a=x, b=false, sel=zx, out=x1);
+    Not16(in=x1, out=notx1);
+    Mux16(a=x1, b=notx1, sel=nx, out=xAfter);
+
+    Mux16(a=y, b=false, sel=zy, out=y1);
+    Not16(in=y1, out=noty1);
+    Mux16(a=y1, b=noty1, sel=ny, out=yAfter);
+
+    Add16(a=xAfter, b=yAfter, out=addOut);
+    And16(a=xAfter, b=yAfter, out=andOut);
+
+    Multiplier(a=xAfter, b=yAfter, lo=mulLo, hi=mulHi);
+
+    Or(a=zx, b=nx, out=notMulX);
+    Or(a=zy, b=ny, out=notMulY);
+    Or(a=notMulX, b=notMulY, out=notMul);
+    Not(in=notMul, out=isMul); 
+
+    Mux16(a=mulLo, b=mulHi, sel=no, out=mulResult);
+
+    Mux16(a=andOut, b=addOut, sel=f, out=stdALUOut);
+    
+    Not16(in=stdALUOut, out=notStdOut);
+    Mux16(a=stdALUOut, b=notStdOut, sel=no, out=stdFinal);
+
+    Mux16(a=stdFinal, b=mulResult, sel=isMul, out=preOut, out[15]=ng, out[0..7]=low8, out[8..15]=high8);
+
+    Or8Way(in=low8, out=or1);
+    Or8Way(in=high8, out=or2);
+    Or(a=or1, b=or2, out=notZero);
+    Not(in=notZero, out=zr);
+    And16(a=preOut, b=true, out=out);
+}
